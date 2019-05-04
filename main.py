@@ -9,7 +9,7 @@ bot = telebot.TeleBot(API_TOKEN)
 
 server = Flask(__name__)
 TELEBOT_URL = 'telebot_webhook/'
-BASE_URL = 'https://example-telebot.herokuapp.com/'
+BASE_URL = 'https://badwordsbot.herokuapp.com/'
 
 
 # Handle '/start' and '/help'
@@ -17,11 +17,15 @@ BASE_URL = 'https://example-telebot.herokuapp.com/'
 def echo_message(message):
     bot.reply_to(message, message.text)
 
-
-bot.polling()
 @server.route('/' + TELEBOT_URL + API_TOKEN, methods=['POST'])
 def get_message():
     bot.process_new_updates([telebot.types.Update.de_json(request.stream.read().decode("utf-8"))])
+    return "!", 200
+
+@server.route("/")
+def webhook():
+    bot.remove_webhook()
+    bot.set_webhook(url=BASE_URL + TELEBOT_URL + API_TOKEN)
     return "!", 200
 
 
@@ -34,5 +38,4 @@ if args.poll:
     bot.polling()
 else:
     server.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)))
-    bot.remove_webhook()
-    bot.set_webhook(url=BASE_URL + TELEBOT_URL + API_TOKEN)
+    webhook()
