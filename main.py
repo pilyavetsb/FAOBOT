@@ -14,7 +14,7 @@ BASE_URL = 'https://example-telebot.herokuapp.com/'
 
 # Handle '/start' and '/help'
 @bot.message_handler(commands=['help', 'start'])
-@@ -18,4 +23,20 @@ def echo_message(message):
+def echo_message(message):
     bot.reply_to(message, message.text)
 
 
