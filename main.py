@@ -12,6 +12,13 @@ server = Flask(__name__)
 TELEBOT_URL = 'telebot_webhook/'
 BASE_URL = 'https://badwordsbot.herokuapp.com/'
 
+worker_dict=dict()
+
+class Worker():
+    def __init__(self, name):
+        self.name = name
+        self.word = None
+
 
 # Handle '/start'
 @bot.message_handler(commands=['start'])
@@ -27,17 +34,43 @@ def send_explanation(message):
 
 @bot.message_handler(commands=['test'])
 def ask_who(message):
-    text = "Ну тут вопросик"
+    text = "Кто провинился?"
     chat_id = message.chat.id
-    markup = types.ReplyKeyboardMarkup(row_width=2)
-    itembtn1 = types.KeyboardButton('Коннор')
-    itembtn2 = types.KeyboardButton('Роннок')
-    markup.add(itembtn1,itembtn2)
+    markup = types.ReplyKeyboardMarkup(row_width=3, one_time_keyboard=True)
+    itembtn1 = types.KeyboardButton('Костя')
+    itembtn2 = types.KeyboardButton('Света')
+    itembtn3 = types.KeyboardButton('Катя')
+    itembtn4 = types.KeyboardButton('Дима')
+    itembtn5 = types.KeyboardButton('Маша')
+    itembtn6 = types.KeyboardButton('Юля')
+    itembtn7 = types.KeyboardButton('Богдан')
+    itembtn8 = types.KeyboardButton('Ваня')
+    itembtn9 = types.KeyboardButton('Марина')
+    markup.add(itembtn1, itembtn2, itembtn3, itembtn4, itembtn5, itembtn6, itembtn7, itembtn8, itembtn9)
     msg = bot.send_message(chat_id, text, reply_markup=markup)
-    bot.register_next_step_handler(msg, process_choice)
+    bot.register_next_step_handler(msg, what_word)
 
-def process_choice(message):
-    bot.reply_to(message, f'Ты выбрал{message.text}')
+def what_word(message):
+    markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+    itembtn1 = types.KeyboardButton('Бл**ь')
+    itembtn2 = types.KeyboardButton('П**да')
+    itembtn3 = types.KeyboardButton('Х*й')
+    itembtn4 = types.KeyboardButton('Е**ть')
+    itembtn5 = types.KeyboardButton('П*дар')
+    chat_id = message.chat.id
+    worker = Worker(message.text)
+    worker_dict[chat_id] = worker
+    markup.row(itembtn1,itembtn2,itembtn3)
+    markup.row(itembtn4,itembtn5)
+    msg = bot.send_message(chat_id, "А что сказал?")
+    bot.register_next_step_handler(msg, db_writer)
+
+def db_writer(message):
+    chat_id = message.chat.id
+    worker=worker_dict[chat_id]
+    worker.word = message.text
+    bot.send_message(chat_id, f"Матерщинник - {worker.name}, слово - {worker.word}")
+
 
 @server.route('/' + TELEBOT_URL + API_TOKEN, methods=['POST'])
 def get_message():
