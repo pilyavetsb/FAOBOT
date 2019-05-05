@@ -12,10 +12,18 @@ TELEBOT_URL = 'telebot_webhook/'
 BASE_URL = 'https://badwordsbot.herokuapp.com/'
 
 
-# Handle '/start' and '/help'
-@bot.message_handler(commands=['help', 'start'])
-def echo_message(message):
-    bot.reply_to(message, message.text)
+# Handle '/start'
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    text = "Привет! Я бот, который собирает статистику матерщинников ФАО😜"
+    bot.reply_to(message, text)
+
+#Handle '/help'
+@bot.message_handler(commands=['help'])
+def send_explanation(message):
+    text = "Чтобы сделать то-то и то-то, сделай вот это вот."
+    bot.reply_to(message, text)
+
 
 @server.route('/' + TELEBOT_URL + API_TOKEN, methods=['POST'])
 def get_message():
