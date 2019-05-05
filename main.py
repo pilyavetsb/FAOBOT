@@ -62,14 +62,15 @@ def what_word(message):
     worker_dict[chat_id] = worker
     markup.row(itembtn1,itembtn2,itembtn3)
     markup.row(itembtn4,itembtn5)
-    msg = bot.send_message(chat_id, "А что сказал?")
+    msg = bot.send_message(chat_id, "А что сказал?", reply_markup=markup)
     bot.register_next_step_handler(msg, db_writer)
 
 def db_writer(message):
+    markup = types.ReplyKeyboardRemove()
     chat_id = message.chat.id
     worker=worker_dict[chat_id]
     worker.word = message.text
-    bot.send_message(chat_id, f"Матерщинник - {worker.name}, слово - {worker.word}")
+    bot.send_message(chat_id, f"Матерщинник - {worker.name}, слово - {worker.word}", reply_markup=markup)
 
 
 @server.route('/' + TELEBOT_URL + API_TOKEN, methods=['POST'])
