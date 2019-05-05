@@ -1,6 +1,7 @@
 import argparse
 import os
 import telebot
+from telebot import types
 
 from flask import Flask, request
 
@@ -24,6 +25,19 @@ def send_explanation(message):
     text = "Чтобы сделать то-то и то-то, сделай вот это вот."
     bot.reply_to(message, text)
 
+@bot.message_handler(commands=['test'])
+def ask_who(message):
+    text = "Ну тут вопросик"
+    chat_id = message.chat.id
+    markup = types.ReplyKeyboardMarkup(row_width=2)
+    itembtn1 = types.KeyboardButton('Коннор')
+    itembtn2 = types.KeyboardButton('Роннок')
+    markup.add(itembtn1,itembtn2)
+    msg = bot.send_message(chat_id, text, reply_markup=markup)
+    bot.register_next_step_handler(msg, process_choice)
+
+def process_choice(message):
+    bot.reply_to(message, f'Ты выбрал{message.text}')
 
 @server.route('/' + TELEBOT_URL + API_TOKEN, methods=['POST'])
 def get_message():
