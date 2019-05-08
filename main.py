@@ -2,10 +2,13 @@ import argparse
 import os
 import telebot
 from telebot import types
-
 from flask import Flask, request
+from datetime import datetime
+from pymongo import MongoClient
+
 
 API_TOKEN = os.environ['TOKEN']
+MONGO_URI = os.environ['MONGO_URI']
 bot = telebot.TeleBot(API_TOKEN)
 
 server = Flask(__name__)
@@ -13,11 +16,17 @@ TELEBOT_URL = 'telebot_webhook/'
 BASE_URL = 'https://badwordsbot.herokuapp.com/'
 
 worker_dict=dict()
+client = MongoClient(MONGO_URI)
+db = client.heroku_d2sk3l47
+curses = db.curses
 
 class Worker():
     def __init__(self, name):
         self.name = name
         self.word = None
+
+    def get_payload(self):
+        return {"worker":self.name, "word":self.word, "timestamp":datetime.utcnow()}
 
 
 # Handle '/start'
@@ -26,13 +35,7 @@ def send_welcome(message):
     text = "Привет! Я бот, который собирает статистику матерщинников ФАО😜"
     bot.reply_to(message, text)
 
-#Handle '/help'
-@bot.message_handler(commands=['help'])
-def send_explanation(message):
-    text = "Чтобы сделать то-то и то-то, сделай вот это вот."
-    bot.reply_to(message, text)
-
-@bot.message_handler(commands=['test'])
+@bot.message_handler(commands=['report'])
 def ask_who(message):
     text = "Кто провинился?"
     chat_id = message.chat.id
@@ -70,7 +73,21 @@ def db_writer(message):
     chat_id = message.chat.id
     worker=worker_dict[chat_id]
     worker.word = message.text
-    bot.send_message(chat_id, f"Матерщинник - {worker.name}, слово - {worker.word}", reply_markup=markup)
+    payload = worker.get_payload()
+
+    curses.insert_one(payload)
+    bot.send_message(chat_id, f"Матерщинник - {worker.name}, слово - {worker.word}.\n" \
+                              f"Запись внесена в базу", reply_markup=markup)
+
+@bot.message_handler(commands=['leaderboard'])
+def get_leaderboard(message):
+    chat_id = message.chat.id
+    pipeline = [{"$group": {"_id": "$worker", "count": {"$sum":1}}},
+    {"$sort": {"count":-1}}]
+    query_res = list(curses.aggregate(pipeline))
+    msg = [str(i['_id'])+': - '+ str(i['count']) + '\n' for i in query_res]
+    msg = "А вот и наши лидеры🏆:\n" + "".join(msg)
+    bot.send_message(chat_id, msg)
 
 
 @server.route('/' + TELEBOT_URL + API_TOKEN, methods=['POST'])
