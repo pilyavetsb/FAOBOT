@@ -5,6 +5,7 @@ from telebot import types
 from flask import Flask, request
 from datetime import datetime
 from pymongo import MongoClient
+from datetime import date
 
 
 API_TOKEN = os.environ['TOKEN']
@@ -79,15 +80,35 @@ def db_writer(message):
     bot.send_message(chat_id, f"Матерщинник - {worker.name}, слово - {worker.word}.\n" \
                               f"Запись внесена в базу", reply_markup=markup)
 
+def generate_board(result):
+    msg = [str(i['_id'])+' - '+ str(i['count']) + '\n' for i in result]
+    return msg    
+
 @bot.message_handler(commands=['leaderboard'])
 def get_leaderboard(message):
     chat_id = message.chat.id
     pipeline = [{"$group": {"_id": "$worker", "count": {"$sum":1}}},
     {"$sort": {"count":-1}}]
     query_res = list(curses.aggregate(pipeline))
-    msg = [str(i['_id'])+': - '+ str(i['count']) + '\n' for i in query_res]
+    msg = generate_board(query_res)
     msg = "А вот и наши лидеры🏆:\n" + "".join(msg)
     bot.send_message(chat_id, msg)
+
+@bot.message_handler(commands=['month'])
+def get_monthly_stats(message):
+    chat_id = message.chat.id
+    current = date.today()
+    current = current.month
+    month_pipeline = [
+        {"$project": {"doc":"$$ROOT", "month": {"$month":"$timestamp"}, "worker":"$worker"}},
+        {"$match": {"month":current}},
+        {"$group": {"_id": "$worker", "count": {"$sum":1}}},
+        {"$sort": {"count":-1}}
+    ]
+    query_res=curses.aggregate(month_pipeline)
+    msg = generate_board(query_res)
+    msg = "Фавориты текущего месяца🏃:\n" + "".join(msg)
+    bot.send_message(chat_id, msg)    
 
 
 @server.route('/' + TELEBOT_URL + API_TOKEN, methods=['POST'])
